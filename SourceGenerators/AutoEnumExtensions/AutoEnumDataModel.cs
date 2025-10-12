@@ -22,7 +22,12 @@ internal class AutoEnumDataModel : ClassDataModel
             .Where(f =>
                 f.IsStatic &&
                 f.IsReadOnly &&
-                SymbolEqualityComparer.Default.Equals(f.Type, symbol))
+                (SymbolEqualityComparer.Default.Equals(f.Type, symbol)
+                    ||
+                // HasAutoEnumIncludeAttribute(f)
+                InheritsFrom(f.Type, symbol)
+                )
+                )
             .Select(f => f.Name)
             .ToArray();
 
@@ -36,7 +41,33 @@ internal class AutoEnumDataModel : ClassDataModel
                 _ => "class"
             }).FirstOrDefault() ?? "class";
     }
+    private static bool HasAutoEnumIncludeAttribute(IFieldSymbol f)
+    {
+        return f.GetAttributes().Any(a =>
+            a.AttributeClass?.Name is "AutoEnumIncludeAttribute" or "AutoEnumInclude");
+    }
 
+    private static bool InheritsFrom(ITypeSymbol type, INamedTypeSymbol baseType)
+    {
+        if (type is null)
+            return false;
+
+        // Nếu cùng type thì true
+        if (SymbolEqualityComparer.Default.Equals(type, baseType))
+            return true;
+
+        // Kiểm tra chain kế thừa
+        var current = type.BaseType;
+        while (current != null)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current, baseType))
+                return true;
+
+            current = current.BaseType;
+        }
+
+        return false;
+    }
     protected override string Str()
     {
         return string.Join("\n", EnumMembers.Select(x => $" - Member: {x}"))
