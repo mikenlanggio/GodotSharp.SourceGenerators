@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 {{~ Namespace ~}}
 
-partial class {{ClassName}}
+partial {{DeclarationKeyword}} {{ClassName}}
 {
     public enum Enum
     {
