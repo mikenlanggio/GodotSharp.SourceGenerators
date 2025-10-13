@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Text.RegularExpressions;
+using Godot;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -73,6 +74,10 @@ public abstract class SourceGeneratorForDeclaredMemberWithAttribute<TAttribute, 
                         context.ReportDiagnostic(diagnostic);
                         continue;
                     }
+                    if (InheritsFrom(attribute, nameof(CommonAttribute)))
+                    {
+                        // var outputType = attribute.NamedArguments[0];
+                    }
 
                     context.AddSource(GenerateFilename(symbol), generatedCode);
                 }
@@ -84,7 +89,23 @@ public abstract class SourceGeneratorForDeclaredMemberWithAttribute<TAttribute, 
             }
         }
     }
+    bool InheritsFrom(AttributeData attr, string baseFullName)
+    {
+        var attrClass = attr.AttributeClass;
+        if (attrClass == null)
+            return false;
 
+        // Duyệt ngược lên cha cho đến khi không còn base type
+        while (attrClass != null)
+        {
+            if (attrClass.Name == baseFullName)
+                return true;
+
+            attrClass = attrClass.BaseType;
+        }
+
+        return false;
+    }
     protected abstract (string GeneratedCode, DiagnosticDetail Error) GenerateCode(Compilation compilation, SyntaxNode node, ISymbol symbol, AttributeData attribute, AnalyzerConfigOptions options);
 
     private (string GeneratedCode, DiagnosticDetail Error) _GenerateCode(Compilation compilation, SyntaxNode node, ISymbol symbol, AttributeData attribute, AnalyzerConfigOptions options)
