@@ -7,8 +7,4 @@ namespace Godot
         ROSLYN,
         REAL,
     }
-    public class CommonAttribute(OutputType outputType = OutputType.ROSLYN) : Attribute
-    {
-        public OutputType OutputType { get; } = outputType;
-    }
 }
