@@ -13,7 +13,7 @@ internal class AutoEnumSourceGenerator : SourceGeneratorForDeclaredTypeWithAttri
 
 
 
-    protected override (string GeneratedCode, DiagnosticDetail Error) GenerateCode(
+    protected override (string GeneratedCode, DiagnosticDetail Error, OutputType outputType) GenerateCodeEx(
         Compilation compilation,
         SyntaxNode node,
         INamedTypeSymbol symbol,
@@ -27,29 +27,7 @@ internal class AutoEnumSourceGenerator : SourceGeneratorForDeclaredTypeWithAttri
         var output = AutoEnumTemplate.Render(model, member => member.Name);
         Log.Debug($"--- OUTPUT ---\n{output}<END>\n");
 
-        var fileName = GenerateFilename(symbol);
-        var sourceFilePath = node.SyntaxTree.FilePath;
-        var sourceDir = Path.GetDirectoryName(sourceFilePath);
-        var targetDir = sourceDir;
-        var physicalPath = Path.Combine(targetDir, fileName);
-        if (data.OutputType == OutputType.REAL)
-        {
-            try
-            {
-
-                File.WriteAllText(physicalPath, output, Encoding.UTF8);
-                Log.Debug($"[AutoEnum] Wrote physical enum file: {physicalPath}");
-            }
-            catch (Exception ex)
-            {
-                Log.Debug($"[AutoEnum] Failed to write physical file: {ex}");
-            }
-            return (null, null);
-        } else
-        {
-            File.Delete(physicalPath);
-            return (output, null);
-        }
+        return (output, null, data.OutputType);
 
         Godot.AutoEnumAttribute ReconstructAttribute() =>
             new((string)attribute.ConstructorArguments[0].Value ?? "", (OutputType) attribute.ConstructorArguments[1].Value);

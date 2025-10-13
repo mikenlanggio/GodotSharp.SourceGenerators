@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Text;
 using System.Text.RegularExpressions;
 using Godot;
 using Microsoft.CodeAnalysis;
@@ -65,7 +66,7 @@ public abstract class SourceGeneratorForDeclaredMemberWithAttribute<TAttribute, 
                     var attribute = symbol.GetAttributes().SingleOrDefault(x => x.AttributeClass.Name == attributeType);
                     if (attribute is null) continue;
 
-                    var (generatedCode, error) = _GenerateCode(compilation, node, symbol, attribute, options.GlobalOptions);
+                    var (generatedCode, error, outputType) = _GenerateCode(compilation, node, symbol, attribute, options.GlobalOptions);
 
                     if (generatedCode is null)
                     {
@@ -74,12 +75,30 @@ public abstract class SourceGeneratorForDeclaredMemberWithAttribute<TAttribute, 
                         context.ReportDiagnostic(diagnostic);
                         continue;
                     }
-                    if (InheritsFrom(attribute, nameof(CommonAttribute)))
+                    var fileName = GenerateFilename(symbol);
+                    var sourceFilePath = node.SyntaxTree.FilePath;
+                    var sourceDir = Path.GetDirectoryName(sourceFilePath);
+                    var targetDir = sourceDir;
+                    var physicalPath = Path.Combine(targetDir, fileName);
+                    if (outputType == OutputType.REAL)
                     {
-                        // var outputType = attribute.NamedArguments[0];
+                        try
+                        {
+
+                            File.WriteAllText(physicalPath, generatedCode, Encoding.UTF8);
+                            Log.Debug($"[AutoEnum] Wrote physical enum file: {physicalPath}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Debug($"[AutoEnum] Failed to write physical file: {ex}");
+                        }
+                    }
+                    else
+                    {
+                        File.Delete(physicalPath);
+                        context.AddSource(GenerateFilename(symbol), generatedCode);
                     }
 
-                    context.AddSource(GenerateFilename(symbol), generatedCode);
                 }
             }
             catch (Exception e)
@@ -106,9 +125,9 @@ public abstract class SourceGeneratorForDeclaredMemberWithAttribute<TAttribute, 
 
         return false;
     }
-    protected abstract (string GeneratedCode, DiagnosticDetail Error) GenerateCode(Compilation compilation, SyntaxNode node, ISymbol symbol, AttributeData attribute, AnalyzerConfigOptions options);
+    protected abstract (string GeneratedCode, DiagnosticDetail Error, OutputType outputType) GenerateCode(Compilation compilation, SyntaxNode node, ISymbol symbol, AttributeData attribute, AnalyzerConfigOptions options);
 
-    private (string GeneratedCode, DiagnosticDetail Error) _GenerateCode(Compilation compilation, SyntaxNode node, ISymbol symbol, AttributeData attribute, AnalyzerConfigOptions options)
+    private (string GeneratedCode, DiagnosticDetail Error, OutputType outputType) _GenerateCode(Compilation compilation, SyntaxNode node, ISymbol symbol, AttributeData attribute, AnalyzerConfigOptions options)
     {
         try
         {
@@ -117,7 +136,7 @@ public abstract class SourceGeneratorForDeclaredMemberWithAttribute<TAttribute, 
         catch (Exception e)
         {
             Log.Error(e);
-            return (null, InternalError(e));
+            return (null, InternalError(e), OutputType.ROSLYN);
         }
 
         static DiagnosticDetail InternalError(Exception e)
