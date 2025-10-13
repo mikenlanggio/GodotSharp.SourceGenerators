@@ -27,18 +27,16 @@ internal class AutoEnumSourceGenerator : SourceGeneratorForDeclaredTypeWithAttri
         var output = AutoEnumTemplate.Render(model, member => member.Name);
         Log.Debug($"--- OUTPUT ---\n{output}<END>\n");
 
-
+        var fileName = GenerateFilename(symbol);
+        var sourceFilePath = node.SyntaxTree.FilePath;
+        var sourceDir = Path.GetDirectoryName(sourceFilePath);
+        var targetDir = sourceDir;
+        var physicalPath = Path.Combine(targetDir, fileName);
         if (data.OutputType == OutputType.REAL)
         {
-            var fileName = GenerateFilename(symbol);
             try
             {
-                var sourceFilePath = node.SyntaxTree.FilePath;
-                var sourceDir = Path.GetDirectoryName(sourceFilePath);
-                var targetDir = Path.Combine(sourceDir, data.OutputDir);
-                Directory.CreateDirectory(targetDir);
 
-                var physicalPath = Path.Combine(targetDir, fileName);
                 File.WriteAllText(physicalPath, output, Encoding.UTF8);
                 Log.Debug($"[AutoEnum] Wrote physical enum file: {physicalPath}");
             }
@@ -49,10 +47,11 @@ internal class AutoEnumSourceGenerator : SourceGeneratorForDeclaredTypeWithAttri
             return (null, null);
         } else
         {
+            File.Delete(physicalPath);
             return (output, null);
         }
 
         Godot.AutoEnumAttribute ReconstructAttribute() =>
-            new((string)attribute.ConstructorArguments[0].Value ?? "", (OutputType) attribute.ConstructorArguments[1].Value, (string)attribute.ConstructorArguments[2].Value ?? "");
+            new((string)attribute.ConstructorArguments[0].Value ?? "", (OutputType) attribute.ConstructorArguments[1].Value);
     }
 }

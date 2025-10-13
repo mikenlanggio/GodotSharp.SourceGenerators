@@ -7,9 +7,8 @@ namespace Godot
         ROSLYN,
         REAL,
     }
-    public class CommonAttribute(OutputType outputType = OutputType.ROSLYN, string outputDir = "") : Attribute
+    public class CommonAttribute(OutputType outputType = OutputType.ROSLYN) : Attribute
     {
         public OutputType OutputType { get; } = outputType;
-        public string OutputDir { get; } = outputDir;
     }
 }

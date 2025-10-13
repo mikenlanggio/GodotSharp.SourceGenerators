@@ -6,9 +6,8 @@ namespace Godot
     public sealed class AutoEnumAttribute
     (
         string identityProperty = "",
-        OutputType outputType = OutputType.ROSLYN,
-        string outputDir = ""
-    ) : CommonAttribute(outputType, outputDir)
+        OutputType outputType = OutputType.ROSLYN
+    ) : CommonAttribute(outputType)
     {
         /// <summary>
         /// The property name used as the instance identifier when generating conversion methods.
